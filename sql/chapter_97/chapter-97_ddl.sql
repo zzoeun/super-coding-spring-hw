@@ -40,6 +40,7 @@ CREATE TABLE payment(
 	payment_id INT AUTO_INCREMENT PRIMARY KEY,
     passenger_id INT,
     reservation_id INT,
+    pay_at DATETIME,
     FOREIGN KEY(passenger_id) REFERENCES passenger(passenger_id),
     FOREIGN KEY(reservation_id) REFERENCES reservation(reservation_id)
 );
