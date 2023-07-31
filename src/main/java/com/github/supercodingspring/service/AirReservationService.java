@@ -5,16 +5,20 @@ import com.github.supercodingspring.repository.airlineTicket.AirlineTicketAndFli
 import com.github.supercodingspring.repository.airlineTicket.AirlineTicketRepository;
 import com.github.supercodingspring.repository.passenger.Passenger;
 import com.github.supercodingspring.repository.passenger.PassengerReposiotry;
+import com.github.supercodingspring.repository.payments.Payment;
+import com.github.supercodingspring.repository.payments.PaymentRepository;
 import com.github.supercodingspring.repository.reservations.Reservation;
 import com.github.supercodingspring.repository.reservations.ReservationRepository;
 import com.github.supercodingspring.repository.users.UserEntity;
 import com.github.supercodingspring.repository.users.UserRepository;
+import com.github.supercodingspring.web.dto.airline.PaymentsRequest;
 import com.github.supercodingspring.web.dto.airline.ReservationRequest;
 import com.github.supercodingspring.web.dto.airline.ReservationResult;
 import com.github.supercodingspring.web.dto.airline.Ticket;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,12 +30,14 @@ public class AirReservationService {
 
     private PassengerReposiotry passengerReposiotry;
     private ReservationRepository reservationRepository;
+    private PaymentRepository paymentRepository;
 
-    public AirReservationService(UserRepository userRepository, AirlineTicketRepository airlineTicketRepository, PassengerReposiotry passengerReposiotry, ReservationRepository reservationRepository) {
+    public AirReservationService(UserRepository userRepository, AirlineTicketRepository airlineTicketRepository, PassengerReposiotry passengerReposiotry, ReservationRepository reservationRepository, PaymentRepository paymentRepository) {
         this.userRepository = userRepository;
         this.airlineTicketRepository = airlineTicketRepository;
         this.passengerReposiotry = passengerReposiotry;
         this.reservationRepository = reservationRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     public List<Ticket> findUserFavoritePlaceTickets(Integer userId, String ticketType) {
@@ -75,5 +81,54 @@ public class AirReservationService {
         Integer totalPrice = airlineTicketAndFlightInfos.stream().map(AirlineTicketAndFlightInfo::getTotalPrice).findFirst().get();
 
         return new ReservationResult(prices, charges, tax, totalPrice, isSuccess);
+    }
+
+    @Transactional(transactionManager = "tm2")
+    public Integer makePayments(PaymentsRequest paymentsRequest) {
+        // TODO: 아래 로직 으로 잔행
+        // 0. userIds, airlineTicketIds 추출 및 정상 Input 조건 확인
+        // 1. 각 userIds 에 해당하는 passengers 검색 및 id 추출
+        // 2. 각 passenger 와 airline_ticket 에 해당하는 reservation 검색
+        //      2-1. 만약 userId 와 airline_ticket 해당하는 Reservation이 2개 이상이면 실패
+        //      2-2. 만약 UserId 와 airline_ticket 해당하는 Reservation이 0개면 실패
+        // 3. Reservation 을 찾았는데, 해당 reservation이 이미 "확정"상태이면 결제 실패
+        // 4. 모든 조건 만족하는 Reservation 를 찾고 passengerId 와 ReservationId로 Payment 생성 후 count++
+        // 5. Reservation 상태 "대기" -> "확정"으로 변경.
+
+        List<Integer> userIds = paymentsRequest.getUserIds();
+        List<Integer> airlineTicketIds = paymentsRequest.getAirlineTicketIds();
+
+        if (userIds.size() != airlineTicketIds.size() )
+            throw new RuntimeException("userIds 와 airlineTicketIds의 길이는 항상 같아야 합니다.");
+
+        List<Integer> passengerIds = userIds.stream()
+                                            .map((userId) -> passengerReposiotry.findPassengerByUserId(userId)) // passenger 검색
+                                            .map(Passenger::getPassengerId)
+                                            .collect(Collectors.toList());
+
+        List<Reservation> reservationCandidateList = new ArrayList<>();
+        int successCount = 0;
+
+        for (int i = 0; i < userIds.size(); i++){
+            Integer passengerId = passengerIds.get(i);
+            Integer airlineTicketId = airlineTicketIds.get(i);
+
+            Reservation reservation = reservationRepository.findReservationWithPassengerIdAndAirLineTicketId(passengerId, airlineTicketId);
+            reservationCandidateList.add(reservation);
+        }
+
+        for (Reservation reservation: reservationCandidateList){
+            if (reservation == null ) continue;
+            if (reservation.getReservationStatus().equals("확정")) continue;
+
+            Payment paymentNew = new Payment(reservation.getReservationId(), reservation.getPassengerId());
+            Boolean success = paymentRepository.savePayment(paymentNew);
+
+            if (success) {
+                successCount++;
+                reservationRepository.updateReservationStatus(reservation.getReservationId(), "확정");
+            }
+        }
+        return successCount;
     }
 }

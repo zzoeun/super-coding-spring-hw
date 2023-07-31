@@ -2,6 +2,7 @@ package com.github.supercodingspring.repository.reservations;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
@@ -11,10 +12,19 @@ import java.sql.Timestamp;
 public class ReservationJdbcTemplateDao implements ReservationRepository {
 
     private JdbcTemplate template;
-
     public ReservationJdbcTemplateDao(@Qualifier("jdbcTemplate2") JdbcTemplate jdbcTemplate) {
         this.template = jdbcTemplate;
     }
+
+    static RowMapper<Reservation> reservationJoinRowMapper = (((rs, rowNum) ->
+            new Reservation(
+                    rs.getInt("reservation_id"),
+                    rs.getInt("passenger_id"),
+                    rs.getInt("airline_ticket_id"),
+                    rs.getNString("reservation_status"),
+                    rs.getDate("reserve_at").toLocalDate().atStartOfDay()
+            )
+    ));
 
     @Override
     public Boolean saveReservation(Reservation reservation) {
@@ -23,4 +33,21 @@ public class ReservationJdbcTemplateDao implements ReservationRepository {
                                           new Date(Timestamp.valueOf(reservation.getReserveAt()).getTime()));
         return rowNums > 0;
     }
+
+    @Override
+    public Reservation findReservationWithPassengerIdAndAirLineTicketId(Integer passengerId, Integer airlineTicketId) {
+        try {
+            return template.queryForObject("SELECT * FROM reservation WHERE passenger_id = ? AND airline_ticket_id = ?", reservationJoinRowMapper, passengerId, airlineTicketId);
+        } catch (Exception e){
+            return null;
+        }
+    }
+
+    @Override
+    public void updateReservationStatus(Integer reservationId, String status) {
+        template.update("UPDATE reservation " +
+                        "       SET reservation_status = ? " +
+                        "       WHERE reservation_id = ? ", status, reservationId);
+    }
+
 }

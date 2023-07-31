@@ -16,6 +16,14 @@ public class Reservation {
         this.reserveAt = LocalDateTime.now();
     }
 
+    public Reservation(Integer reservationId, Integer passengerId, Integer airlineTicketId, String reservationStatus, LocalDateTime reserveAt) {
+        this.reservationId = reservationId;
+        this.passengerId = passengerId;
+        this.airlineTicketId = airlineTicketId;
+        this.reservationStatus = reservationStatus;
+        this.reserveAt = reserveAt;
+    }
+
     public Integer getReservationId() {
         return reservationId;
     }
@@ -73,5 +81,16 @@ public class Reservation {
     @Override
     public int hashCode() {
         return reservationId.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Reservation{" +
+               "reservationId=" + reservationId +
+               ", passengerId=" + passengerId +
+               ", airlineTicketId=" + airlineTicketId +
+               ", reservationStatus='" + reservationStatus + '\'' +
+               ", reserveAt=" + reserveAt +
+               '}';
     }
 }

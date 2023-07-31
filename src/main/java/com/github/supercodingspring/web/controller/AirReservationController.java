@@ -1,10 +1,7 @@
 package com.github.supercodingspring.web.controller;
 
 import com.github.supercodingspring.service.AirReservationService;
-import com.github.supercodingspring.web.dto.airline.ReservationRequest;
-import com.github.supercodingspring.web.dto.airline.ReservationResult;
-import com.github.supercodingspring.web.dto.airline.Ticket;
-import com.github.supercodingspring.web.dto.airline.TicketResponse;
+import com.github.supercodingspring.web.dto.airline.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,5 +25,11 @@ public class AirReservationController {
     @PostMapping("/reservations")
     public ReservationResult makeReservation(@RequestBody ReservationRequest reservationRequest){
         return airReservationService.makeReservation(reservationRequest);
+    }
+
+    @PostMapping("/payments")
+    public String makePayments(@RequestBody PaymentsRequest paymentsRequest){
+        Integer successPayments = airReservationService.makePayments(paymentsRequest);
+        return "요청하신 결제 중 " + successPayments + "건 진행완료 되었습니다.";
     }
 }
