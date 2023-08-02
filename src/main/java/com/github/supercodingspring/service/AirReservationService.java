@@ -3,6 +3,7 @@ package com.github.supercodingspring.service;
 import com.github.supercodingspring.repository.airlineTicket.AirlineTicket;
 import com.github.supercodingspring.repository.airlineTicket.AirlineTicketJpaRepository;
 import com.github.supercodingspring.repository.flight.Flight;
+import com.github.supercodingspring.repository.flight.FlightJpaRepository;
 import com.github.supercodingspring.repository.passenger.Passenger;
 import com.github.supercodingspring.repository.passenger.PassengerJpaRepository;
 import com.github.supercodingspring.repository.reservations.FlightPriceAndCharge;
@@ -13,11 +14,15 @@ import com.github.supercodingspring.repository.users.UserJpaRepository;
 import com.github.supercodingspring.service.exceptions.InvalidValueException;
 import com.github.supercodingspring.service.exceptions.NotAcceptException;
 import com.github.supercodingspring.service.exceptions.NotFoundException;
+import com.github.supercodingspring.service.mapper.FlightMapper;
 import com.github.supercodingspring.service.mapper.TicketMapper;
+import com.github.supercodingspring.web.dto.airline.FlightInfo;
 import com.github.supercodingspring.web.dto.airline.ReservationRequest;
 import com.github.supercodingspring.web.dto.airline.ReservationResult;
 import com.github.supercodingspring.web.dto.airline.Ticket;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +38,7 @@ public class AirReservationService {
 
     private final UserJpaRepository userJpaRepository;
     private final AirlineTicketJpaRepository airlineTicketJpaRepository;
+    private final FlightJpaRepository flightJpaRepository;
 
     private final PassengerJpaRepository passengerJpaRepository;
     private final ReservationJpaRepository reservationJpaRepository;
@@ -110,5 +116,15 @@ public class AirReservationService {
 
         // 3. 두개의 합을 다시 더하고 Return
         return flightSum + chargeSum;
+    }
+
+    public Page<FlightInfo> findFlightsWithTypeAndPageable(String ticketType, Pageable pageable) {
+        Page<Flight> flightList = flightJpaRepository.findAllByAirlineTicket_TicketType(ticketType, pageable);
+        return flightList.map(FlightMapper.INSTANCE::flightToFlightInfo);
+    }
+
+    public Set<String> findFlightArrivalLocation(String userName) {
+        Set<String> locations = reservationJpaRepository.findArrivalLocation(userName);
+        return locations;
     }
 }

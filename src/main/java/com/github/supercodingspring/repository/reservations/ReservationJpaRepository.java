@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface ReservationJpaRepository extends JpaRepository<Reservation, Integer> {
@@ -17,4 +18,13 @@ public interface ReservationJpaRepository extends JpaRepository<Reservation, Int
            "JOIN a.flightList f " +
            "WHERE p.user.userId = :userId ")
     List<FlightPriceAndCharge> findFlightPriceAndCharge(Integer userId);
+
+
+    @Query("SELECT DISTINCT f.arrivalLocation " +
+           "FROM Reservation r " +
+           "JOIN r.passenger p " +
+           "JOIN r.airlineTicket a " +
+           "JOIN a.flightList f " +
+           "WHERE p.user.userName = :username ")
+    Set<String> findArrivalLocation(String username);
 }
