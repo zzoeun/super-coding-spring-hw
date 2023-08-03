@@ -190,22 +190,10 @@ class AirReservationServiceMakeReservationUnitTest {
                                                    .departureAt(LocalDateTime.now())
                                                    .returnAt(LocalDateTime.now())
                                                    .ticketId(airlineTicketId)
-                                                   .flightList(new ArrayList<>())
+                                                   .flightList(new ArrayList<>())  // Here, no flights are added
                                                    .tax(1234.0)
                                                    .totalPrice(15000.0)
                                                    .build();
-
-        List<Flight> flightList = Arrays.asList(
-                new Flight(1, airlineTicket, LocalDateTime.now(), LocalDateTime.now(), "서울", "파리", 20000.0, 5000.0),
-                new Flight(2, airlineTicket, LocalDateTime.now(), LocalDateTime.now(), "서울", "파리", 20000.0, 5000.0),
-                new Flight(3, airlineTicket, LocalDateTime.now(), LocalDateTime.now(), "서울", "파리", 20000.0, 5000.0),
-                new Flight(4, airlineTicket, LocalDateTime.now(), LocalDateTime.now(), "서울", "파리", 20000.0, 5000.0),
-                new Flight(5, airlineTicket, LocalDateTime.now(), LocalDateTime.now(), "서울", "파리", 20000.0, 5000.0),
-                new Flight(6, airlineTicket, LocalDateTime.now(), LocalDateTime.now(), "서울", "파리", 20000.0, 5000.0)
-        );
-
-        airlineTicket.setFlightList(flightList);
-
 
         Passenger passenger = Passenger.builder()
                                        .passengerId(1234)
@@ -219,7 +207,9 @@ class AirReservationServiceMakeReservationUnitTest {
         when(reservationJpaRepository.save(any())).thenReturn(null);
 
         // then
-        airReservationService.makeReservation(reservationRequest);
+        assertThrows(NotFoundException.class, () ->
+                airReservationService.makeReservation(reservationRequest)
+        );
     }
 
 }
