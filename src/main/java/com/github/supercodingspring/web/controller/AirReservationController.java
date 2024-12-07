@@ -46,5 +46,7 @@ public class AirReservationController {
     {
         Double sum = airReservationService.findUserFlightSumPrice(userId);
         return sum;
+
+
     }
 }

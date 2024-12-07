@@ -7,5 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FlightJpaRepository extends JpaRepository<Flight, Integer> {
 
+    Page<Flight> findAllByAirlineTicket_TicketType(String ticketType, Pageable pageable);
 
 }
